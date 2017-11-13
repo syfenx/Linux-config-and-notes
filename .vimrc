@@ -12,7 +12,7 @@ set number
 set rtp+=~/.vim/bundle/Vundle.vim
 call vundle#begin()
 "--------------------------------------------
-" PLUGINS
+" PLUGINS - test edit with spm(magit)
 "--------------------------------------------
 Plugin 'VundleVim/Vundle.vim'
 Plugin 'scrooloose/nerdtree'
