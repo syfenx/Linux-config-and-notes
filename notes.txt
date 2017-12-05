@@ -1,0 +1,8 @@
+OS: MX 16.1 - Debian Jessie 8.9
+Spacemacs: 0.200.10@24.4.1(emacs version)
+
+If python spacemacs layer gives any errors, install setuptools.
+
+If spacemacs cannot commit to git correctly, replace "fill-column-indicator.el"
+"~/.emacs.d/elpa/fill-column-indicator-20170905.1008/fill-column-indicator.el"
+- delete "fill-column-indicator.elc", restart spacemacs.
