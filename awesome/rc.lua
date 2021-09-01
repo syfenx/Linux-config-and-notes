@@ -2,6 +2,8 @@
 -- Standard awesome library
 local gears = require("gears")
 local awful = require("awful")
+local lain = require("lain")
+
 require("awful.autofocus")
 -- Widget and layout library
 local wibox = require("wibox")
@@ -13,6 +15,11 @@ local menubar = require("menubar")
 local hotkeys_popup = require("awful.hotkeys_popup").widget
 
 local calendar = require("calendar")
+local vicious = require("vicious")
+-- require("widgets.volumebar")
+-- require("widgets.cpu-widget")
+
+
 
 
 -- Load Debian menu entries
@@ -46,7 +53,8 @@ end
 -- {{{ Variable definitions
 -- Themes define colours, icons, font and wallpapers.
 beautiful.init("/home/lichen/.config/awesome/themes/default/theme.lua")
-
+-- beautiful.init("/home/lichen/.config/awesome/themes/holo/theme.lua")
+-- beautiful.init("/home/lichen/.config/awesome/themes/mkttAD/theme.lua")
 -- This is used later as the default terminal and editor to run.
 terminal = "x-terminal-emulator"
 editor = os.getenv("EDITOR") or "editor"
@@ -74,6 +82,7 @@ awful.layout.layouts = {
     awful.layout.suit.max.fullscreen,
     awful.layout.suit.magnifier,
     awful.layout.suit.corner.nw,
+    lain.layout.centerwork,
     -- awful.layout.suit.corner.ne,
     -- awful.layout.suit.corner.sw,
     -- awful.layout.suit.corner.se,
@@ -111,6 +120,8 @@ mymainmenu = awful.menu({ items = { { "awesome", myawesomemenu, beautiful.awesom
                                   }
                         })
 
+--- widgets start
+
 mylauncher = awful.widget.launcher({ image = beautiful.awesome_icon,
                                      menu = mymainmenu })
 
@@ -124,7 +135,23 @@ mykeyboardlayout = awful.widget.keyboardlayout()
 -- {{{ Wibar
 -- Create a textclock widget
 mytextclock = wibox.widget.textclock("%A, %b %d, %r")
+-- mytextclock = wibox.widget.textclock("%A, %b %d, %i:%M ")
 calendar({}):attach(mytextclock)
+
+memwidget = wibox.widget.textbox()
+vicious.cache(vicious.widgets.mem)
+vicious.register(memwidget, vicious.widgets.mem, " MEM $1% ($2MB/$3MB)", 13)
+
+
+-- cpuwidget = awful.widget.graph()
+-- cpuwidget:set_width(80)
+-- cpuwidget:set_background_color("#494B4F")
+-- cpuwidget:set_color({ type = "linear", from = { 0, 0 }, to = { 50, 0 },
+--                       stops = { { 0, "#FF5656" }, { 0.5, "#88A175" }, { 1, "#AECF96" }}})
+-- vicious.register(cpuwidget, vicious.widgets.cpu, "  $1  ", 3)
+
+
+--- widgets end
 
 -- Create a wibox for each screen and add it
 local taglist_buttons = awful.util.table.join(
@@ -190,11 +217,15 @@ awful.screen.connect_for_each_screen(function(s)
 
     -- Each screen has its own tag table.
     --awful.tag({ "1", "2", "3", "4", "5", "6", "7", "8", "9" }, s, awful.layout.layouts[1])
-	local names = { "main", "www", "dev", "files", "chat"  }
+	local names = { "main", "www", "dev", "files" }
+	-- local names = { "main", "www", "dev", "files", "chat"  }
 	local l = awful.layout.suit  -- Just to save some typing: use an alias.
 	local layouts = { l.tile.left, l.tile.left, l.tile.left, l.tile.left, l.tile.top }
 	    awful.tag(names, s, layouts)
 
+  -- View dev tag first on restart
+--   local t = awful.tag.find_by_name(awful.screen.focused(), "dev")
+--   awful.tag.viewonly(t)
     -- Create a promptbox for each screen
     s.mypromptbox = awful.widget.prompt()
     -- Create an imagebox widget which will contains an icon indicating which layout we're using.
@@ -214,6 +245,57 @@ awful.screen.connect_for_each_screen(function(s)
     -- Create the wibox
     s.mywibox = awful.wibar({ position = "top", screen = s })
 
+
+    sprtr = wibox.widget.textbox()
+    sprtrp = wibox.widget.textbox()
+    sprtr:set_text(" | ")
+
+    sprtrp:set_text(" ")
+    -- local mypartition = lain.widget.fs()
+    -- shows root and home partitions percentage used
+    local fsroothome = lain.widget.fs({
+        settings  = function()
+          local onetb_avail = tonumber(fs_info["/mnt/1tbmain avail_gb"]) or 0
+          local threegb_avail = tonumber(fs_info["/mnt/300gb avail_gb"]) or 0
+          local wwgb_avail = tonumber(fs_info["/mnt/workwin7 avail_gb"]) or 0
+          local owgb_avail = tonumber(fs_info["/mnt/otherwin7 avail_gb"]) or 0
+          local stor_avail = tonumber(fs_info["/media/lichen/7AC29785C2974473 avail_gb"]) or 0
+          widget:set_text("/ " .. fs_now.available_gb .. "GB Free | 640GB (" .. stor_avail .. "GB Free)")
+        end
+    })
+
+
+    -- wibar2
+    s.wibox2 = awful.wibar({ position = "bottom" })
+    -- s.sep = awful.wibox.widget.textbox({text="hey", border_color="#ff0000"})
+
+    s.wibox2:setup{
+      layout = wibox.layout.align.horizontal,
+      {
+        layout = wibox.layout.fixed.horizontal,
+        -- memwidget,
+        -- cpuwidget,
+      },
+      layout = wibox.layout.align.horizontal,
+      {
+        layout = wibox.layout.fixed.horizontal,
+        -- memwidget,
+        -- cpuwidget,
+      },
+      layout = wibox.layout.align.horizontal,
+      {
+        layout = wibox.layout.fixed.horizontal,
+        fsroothome,
+        sprtr,
+        memwidget,
+        -- sprtr,
+        -- cpu_widget,
+        -- sprtr,
+        -- volumebar_widget,
+        -- sprtrp,
+      }
+    }
+
     -- Add widgets to the wibox
     s.mywibox:setup {
         layout = wibox.layout.align.horizontal,
@@ -226,14 +308,18 @@ awful.screen.connect_for_each_screen(function(s)
         s.mytasklist, -- Middle widget
         { -- Right widgets
             layout = wibox.layout.fixed.horizontal,
-            mykeyboardlayout,
+            -- mykeyboardlayout,
+            sprtrp,
             wibox.widget.systray(),
+            sprtrp,
             mytextclock,
+            sprtrp,
             s.mylayoutbox,
         },
     }
 end)
 -- }}}
+
 
 -- {{{ Mouse bindings
 root.buttons(awful.util.table.join(
@@ -488,11 +574,16 @@ awful.rules.rules = {
     { rule = { class = "Hexchat" },
       properties = { screen = 1, tag = "chat" } },
     { rule = { class = "Thunar" },
-      properties = { screen = 1, tag = "files" } },
+      properties = { screen = 1, tag = "files", switchtotag = true} },
+    { rule = { class = "Firefox" },
+      properties = { screen = 1, tags = {"dev", "www"} , switchtotag = true} },
     { rule = { class = "Emacs" },
-      properties = { screen = 1, tag = "dev" } },
+      properties = { screen = 1, tag = "dev",
+      callback = function(c) awful.client.setmaster(c) end,
+    } },
     --{ rule = { class = "Thunar" },
       --properties = { screen = 1, tag = "files" } },
+
 }
 -- }}}
 
@@ -501,7 +592,7 @@ awful.rules.rules = {
 client.connect_signal("manage", function (c)
     -- Set the windows at the slave,
     -- i.e. put it at the end of others instead of setting it master.
-    -- if not awesome.startup then awful.client.setslave(c) end
+    if not awesome.startup then awful.client.setslave(c) end
 
     if awesome.startup and
       not c.size_hints.user_position
@@ -566,21 +657,21 @@ client.connect_signal("unfocus", function(c) c.border_color = beautiful.border_n
 -- }}}
 --
 --
---awful.spawn("xfce4-terminal -e vim", {
-		--floating  = false,
-		--tag = "dev",
-		--placement = awful.placement.bottom_right,
-	    --})
---awful.spawn("google-chrome", {
-		--floating  = false,
-		--tag = "dev",
-		--placement = awful.placement.bottom_right,
-	    --})
---awful.spawn("google-chrome", {
-		--floating  = false,
-		--tag = "www",
-		--placement = awful.placement.bottom_right,
-	    --})
+-- awful.spawn("firefox", {
+-- 		floating  = false,
+-- 		tag = "dev",
+-- 		placement = awful.placement.bottom_right,
+-- 	    })
+-- awful.spawn("code", {
+-- 		floating  = false,
+-- 		tag = "dev",
+-- 		placement = awful.placement.bottom_right,
+-- 	    })
+-- awful.spawn("google-chrome", {
+-- 		floating  = false,
+-- 		tag = "www",
+-- 		placement = awful.placement.bottom_right,
+-- 	    })
 function run_once(cmd)
 	findme = cmd
 	firstspace = cmd:find(" ")
@@ -595,12 +686,15 @@ local function spawn_here(cmd)
                 tag = mouse.screen.selected_tag,
   })
 end
-run_once("pasystray")
+
+run_once("firefox")
 run_once("thunar")
-run_once("hexchat")
-run_once("steam")
-run_once("compton")
-run_once("emacs")
+run_once("code")
+run_once("pasystray")
 run_once("nm-applet")
-run_once("xset m 8.2 6")
-run_once("xset r rate 200 20")
+run_once("compton")
+-- run_once("hexchat")
+-- run_once("steam")
+-- run_once("emacs")
+run_once("xset m 9.2 6")
+-- run_once("xset r rate 200 20")
